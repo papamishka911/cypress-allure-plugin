@@ -3,7 +3,7 @@ const fs = require('fs');
 const uuid = require('uuid');
 const logger = require('../reporter/debug');
 
-const { overwriteTestNameMaybe } = require('./customTestName');
+const { overwriteTestNameMaybe, overwriteStepsNames } = require('./customTestName');
 const { clearEmptyHookSteps } = require('./clearEmptyHookSteps');
 const { writeInfoFile, writeEnvProperties } = require('./infoFiles');
 const { readAllureResults, sanitizeSuites } = require('./handleMultiDomain');
@@ -120,8 +120,9 @@ const writeTests = ({ tests, resultsDir, clearSkipped, allureMapping }) => {
         const fileName = `${test.uuid}-result.json`;
         logger.writer('write test "%s" to file "%s"', test.name, fileName);
         const testResultPath = path.join(resultsDir, fileName);
-        const updatedTest = overwriteTestNameMaybe(test);
-        const testResult = clearEmptyHookSteps(updatedTest);
+        const testWithUpdatedName = overwriteTestNameMaybe(test);
+        const testWithUpdatedSteps = overwriteStepsNames(testWithUpdatedName);
+        const testResult = clearEmptyHookSteps(testWithUpdatedSteps);
         fs.writeFileSync(testResultPath, JSON.stringify(testResult));
     });
 };
