@@ -178,7 +178,7 @@ const handleAfterTestWrites = ({ resultsDir, isGlobal }) => {
 const catchError = (fn, ...args) => {
     try {
         fn(...args);
-    } catch (e) {        
+    } catch (e) {
         const entity = args[args.length - 1];
         process.stdout.write(
             `error while writing allure results for ${entity}: ${e}`
