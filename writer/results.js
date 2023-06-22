@@ -119,7 +119,13 @@ const writeSuites = ({ groups, resultsDir, tests, clearSkipped }) => {
     });
 };
 
-const writeTests = ({ tests, resultsDir, clearSkipped, allureMapping }) => {
+const writeTests = ({
+    tests,
+    resultsDir,
+    clearSkipped,
+    allureMapping,
+    defineHistoryId
+}) => {
     if (!tests || !tests.length) {
         return;
     }
@@ -140,7 +146,7 @@ const writeTests = ({ tests, resultsDir, clearSkipped, allureMapping }) => {
         const fileName = `${test.uuid}-result.json`;
         logger.writer('write test "%s" to file "%s"', test.name, fileName);
         const testResultPath = path.join(resultsDir, fileName);
-        const testWithUpdatedName = overwriteTestNameMaybe(test);
+        const testWithUpdatedName = overwriteTestNameMaybe(test, defineHistoryId);
         const testWithUpdatedSteps = overwriteStepsNames(testWithUpdatedName);
         const testResult = clearEmptyHookSteps(testWithUpdatedSteps);
         fs.writeFileSync(testResultPath, JSON.stringify(testResult));
@@ -172,8 +178,11 @@ const handleAfterTestWrites = ({ resultsDir, isGlobal }) => {
 const catchError = (fn, ...args) => {
     try {
         fn(...args);
-    } catch (e) {
-        process.stdout.write(`error while writing allure results: ${e}`);
+    } catch (e) {        
+        const entity = args[args.length - 1];
+        process.stdout.write(
+            `error while writing allure results for ${entity}: ${e}`
+        );
         logger.writer('failed to write allure results: %O', e);
     }
 };
@@ -184,7 +193,8 @@ const writeResultFiles = ({
     clearSkipped,
     writer,
     allureMapping,
-    isGlobal
+    isGlobal,
+    defineHistoryId
 }) => {
     !fs.existsSync(resultsDir) && fs.mkdirSync(resultsDir, { recursive: true });
 
@@ -193,20 +203,49 @@ const writeResultFiles = ({
     const { groups, tests, attachments, envInfo, categories, executorInfo } =
         writer;
 
-    catchError(writeAttachmentFiles, { files, resultsDir, tests });
-    catchError(writeSuites, { groups, resultsDir, tests, clearSkipped });
-    catchError(writeTests, { tests, resultsDir, clearSkipped, allureMapping });
-    catchError(writeAttachments, { attachments, resultsDir });
-    catchError(handleAfterTestWrites, { resultsDir, isGlobal });
+    catchError(writeAttachmentFiles, { files, resultsDir, tests }, 'files');
+    catchError(
+        writeSuites,
+        { groups, resultsDir, tests, clearSkipped },
+        'suites'
+    );
+    catchError(
+        writeTests,
+        {
+            tests,
+            resultsDir,
+            clearSkipped,
+            allureMapping,
+            defineHistoryId
+        },
+        'tests'
+    );
+    catchError(writeAttachments, { attachments, resultsDir }, 'attachments');
+    catchError(
+        handleAfterTestWrites,
+        { resultsDir, isGlobal },
+        'after test writes'
+    );
 
     const allureResultsPath = (file) => path.join(resultsDir, file);
 
-    catchError(writeInfoFile, allureResultsPath('categories.json'), categories);
-    catchError(writeInfoFile, allureResultsPath('executor.json'), executorInfo);
+    catchError(
+        writeInfoFile,
+        allureResultsPath('categories.json'),
+        categories,
+        'cetegories file'
+    );
+    catchError(
+        writeInfoFile,
+        allureResultsPath('executor.json'),
+        executorInfo,
+        'executor file'
+    );
     catchError(
         writeEnvProperties,
         allureResultsPath('environment.properties'),
-        envInfo
+        envInfo,
+        'env file'
     );
     logger.writer('finished writing allure results');
 };

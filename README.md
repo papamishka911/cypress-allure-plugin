@@ -1,7 +1,5 @@
 # cypress-allure-plugin
 
-[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://vshymanskyy.github.io/StandWithUkraine/)
-
 > Plugin for integrating allure reporter in Cypress with support of Allure API.
 
 ![Build][gh-image]
@@ -369,6 +367,35 @@ It will be used for:
     When one of this conditions is satisfied - `after:spec` event will be used for attachments. It will reliably copy all screenshots available for each test and video (if available) to your `allure-results` folder and attach to each of your tests, so you don't need to somehow upload your videos and configure paths, etc.
 
 In lower versions some other heuristics would be used, but they are not as reliable as `after:spec`.
+
+## Test name duplicates
+
+By default Allure calculates hash from test title to identify test and show its' proper previous results.  
+This may lead to tests having the same name being counted by allure as retries of the same test. 
+There are several ways to avoid this situation:
+
+- the best way to avoid it is basically using unique test names
+
+- update specific test name
+    ```js
+        cy.allure().testName('new_test_name')
+    ```
+
+- specify your own function for all tests to not only take test.title, but also concatenate it with some other information in `cypress/support/index` or `cypress/support/e2e.js` file, for example:
+    - use relative spec file path like "cypress/e2e/results2/test.cy.js" and test title:
+        ```js
+        Cypress.Allure.reporter.getInterface().defineHistoryId((title) => {
+            return `${Cypress.spec.relative}${title}`;
+        });
+        ```
+    - use browser name and test title:
+        ```js
+        Cypress.Allure.reporter.getInterface().defineHistoryId((title) => {
+            return `${Cypress.browser.name}${title}`;
+        });
+        ```
+
+    The rule is that this function should return any string (folder name, project name, platform, browser name, Cypress.spec content, etc.), and if those strings will be different - their test historyId hashes will be different - tests will be recognized as different by allure.
 
 ## Suite structuring
 

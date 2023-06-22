@@ -25,7 +25,11 @@ const overwriteStepsNames = (test) => {
   return { ...test, steps: updatedSteps };
 };
 
-const overwriteTestNameMaybe = (test) => {
+const defaultHistoryId = (title) => title;
+
+const overwriteTestNameMaybe = (test, defineHistoryId) => {
+    const historyIdFn = defineHistoryId || defaultHistoryId;
+
     const overrideIndex = test.parameters.findIndex(
         (p) => p.name === 'OverwriteTestName'
     );
@@ -34,7 +38,7 @@ const overwriteTestNameMaybe = (test) => {
         logger.writer('overwriting test "%s" name to "%s"', test.name, name);
         test.name = name;
         test.fullName = name;
-        test.historyId = crypto.MD5(name).toString(crypto.enc.Hex);
+        test.historyId = crypto.MD5(historyIdFn(name)).toString(crypto.enc.Hex);
         test.parameters.splice(overrideIndex, 1);
     }
     return test;
